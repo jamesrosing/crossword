@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int            @id @default(autoincrement())
+  email          String         @unique
+  name           String?
+  puzzles        Puzzle[]
+  userProgresses UserProgress[]
+  rankingPoints  Int            @default(0)
+  rank           String         @default("Novice")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Puzzle {
+  id             Int            @id @default(autoincrement())
+  title          String
+  difficulty     String
+  grid           Json
+  cluesAcross    Json
+  cluesDown      Json
+  creator        User           @relation(fields: [creatorId], references: [id])
+  creatorId      Int
+  userProgresses UserProgress[]
+  theme          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model UserProgress {
+  id             Int      @id @default(autoincrement())
+  user           User     @relation(fields: [userId], references: [id])
+  userId         Int
+  puzzle         Puzzle   @relation(fields: [puzzleId], references: [id])
+  puzzleId       Int
+  progress       Json
+  completed      Boolean  @default(false)
+  completionTime Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, puzzleId])
+}

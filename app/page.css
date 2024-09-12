@@ -1,0 +1,26 @@
+.animated-slogan {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.animated-slogan .initial {
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: fillIn 25s steps(25, end) forwards;
+}
+
+.animated-slogan .final {
+  visibility: hidden;
+}
+
+@keyframes fillIn {
+  0% {
+    visibility: visible;
+  }
+  100% {
+    visibility: hidden;
+  }
+}
