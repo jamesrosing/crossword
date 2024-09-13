@@ -31,16 +31,9 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="flex flex-col min-h-screen">
-            <main className="flex-grow">
+            <main id="main-content" className="flex-grow">
               {children}
             </main>
-            <footer className="py-6 md:px-8 md:py-0">
-              <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-                <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                  Built by CrosswordMaster. All rights reserved.
-                </p>
-              </div>
-            </footer>
           </div>
         </ThemeProvider>
       </body>
