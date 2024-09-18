@@ -67,48 +67,6 @@ async function scrapeNYTCrossword() {
   return crosswordData;
 }
 
-// Function to categorize words and clues into difficulty levels
-function categorizeByDifficulty(wordCluePairs: { word: string; clue: string }[]) {
-  const easy: any[] = [];
-  const medium: any[] = [];
-  const hard: any[] = [];
-
-  wordCluePairs.forEach(({ word, clue }) => {
-    if (word.length <= 4) {
-      easy.push({ word, clue });
-    } else if (word.length > 4 && word.length <= 7) {
-      medium.push({ word, clue });
-    } else {
-      hard.push({ word, clue });
-    }
-  });
-
-  return { easy, medium, hard };
-}
-
-// Function to generate novel puzzles based on difficulty level
-async function generatePuzzlesByDifficulty(wordCluePairs: { word: string; clue: string }[], difficulty: string) {
-  const words = wordCluePairs.map(pair => pair.word);
-  const clues = await generateClues(words);
-
-  const outputPath = path.join(process.cwd(), 'crossword-master', 'data', `wordlist_${difficulty}.txt`);
-  console.log(`Writing to: ${outputPath}`);  // Log the output path
-
-  const outputStream = fs.createWriteStream(outputPath);
-
-  outputStream.on('error', (err) => {
-    console.error(`Error writing to file: ${err.message}`);
-  });
-
-  for (let i = 0; i < words.length; i++) {
-    outputStream.write(`${words[i]}|${clues[i]}\n`);
-  }
-
-  outputStream.end(() => {
-    console.log(`Generated wordlist for ${difficulty} level at ${outputPath}`);
-  });
-}
-
 // Function to generate clues using OpenAI
 async function generateClues(words: string[]): Promise<string[]> {
   const prompt = `Generate short, cryptic crossword clues for the following words. Each clue should be concise and challenging, suitable for a crossword puzzle:
@@ -125,22 +83,24 @@ Provide the clues in the same order as the words, one per line.`;
   });
 
   const clues = response.choices[0].message.content?.split('\n') || [];
-  return clues.map(clue => clue.replace(/^\d+\.\s*/, '').trim());
+  return clues.map((clue: string) => clue.replace(/^\d+\.\s*/, '').trim());
 }
 
 // Main function to scrape and generate puzzles
-async function generateCrosswordPuzzles() {
-  // Step 1: Scrape the NYT crossword data
+async function generateWordlist() {
   const wordCluePairs = await scrapeNYTCrossword();
   console.log(`Scraped ${wordCluePairs.length} words and clues from NYT.`);
 
-  // Step 2: Categorize words into difficulty levels
-  const categorizedData = categorizeByDifficulty(wordCluePairs);
+  const outputPath = path.join(process.cwd(), 'data', 'wordlist.txt');
+  const outputStream = fs.createWriteStream(outputPath);
 
-  // Step 3: Generate and save puzzles for each difficulty level
-  await generatePuzzlesByDifficulty(categorizedData.easy, 'easy');
-  await generatePuzzlesByDifficulty(categorizedData.medium, 'medium');
-  await generatePuzzlesByDifficulty(categorizedData.hard, 'hard');
+  for (const pair of wordCluePairs) {
+    outputStream.write(`${pair.word}|${pair.clue}\n`);
+  }
+
+  outputStream.end(() => {
+    console.log(`Generated wordlist at ${outputPath}`);
+  });
 }
 
-generateCrosswordPuzzles().catch(console.error);
+generateWordlist().catch(console.error);

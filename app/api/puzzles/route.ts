@@ -12,10 +12,6 @@ export async function GET(request: Request) {
         difficulty: difficulty as string,
         title: title as string,
       },
-      include: {
-        acrossClues: true,
-        downClues: true,
-      },
     })
 
     if (!puzzle) {
@@ -24,7 +20,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(puzzle)
   } catch (error) {
-    console.error('Failed to fetch puzzle:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error fetching puzzle:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

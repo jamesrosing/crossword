@@ -1,0 +1,49 @@
+.puzzleGrid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 1px;
+  background-color: #e5e7eb;
+  padding: 1px;
+  border: 1px solid #d1d5db;
+}
+
+.puzzleCell {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;
+}
+
+.whiteCell {
+  background-color: white;
+}
+
+.blackCell {
+  background-color: black;
+}
+
+.selectedCell {
+  background-color: #bfdbfe;
+}
+
+.number {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 0.5rem;
+  font-weight: bold;
+}
+
+.cellInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1rem;
+  text-transform: uppercase;
+  border: none;
+  outline: none;
+  background: transparent;
+}

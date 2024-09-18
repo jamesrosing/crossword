@@ -1,45 +1,29 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "target": "ESNext",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "lib": ["dom", "dom.iterable", "esnext", "es2015"],
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "skipLibCheck": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "outDir": "./dist",
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "sourceMap": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "scripts/**/*",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "verify-setup.mjs",
-    "generateWordList.js",
-    "components/**/*",
-    "lib/**/*",
-    "app/**/*",
-    "tailwind.config.ts"
-  ],
-  "exclude": ["node_modules"],
-  "ts-node": {
-    "esm": true
-  }
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

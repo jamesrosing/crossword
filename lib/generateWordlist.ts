@@ -1,29 +1,28 @@
 import axios from 'axios';
-import fs from 'fs';
 
-const WORD_COUNT = 1000;
+const WORD_COUNT = 50;
 
 async function getRandomWord() {
-  const response = await axios.get('https://random-word-api.herokuapp.com/word');
-  return response.data[0];
+  const response = await axios.get('https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minCorpusCount=1000&minLength=3&maxLength=15&api_key=YOUR_API_KEY');
+  return response.data.word;
 }
 
 async function getWordDefinition(word: string) {
   try {
-    const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-    return response.data[0].meanings[0].definitions[0].definition;
+    const response = await axios.get(`https://api.wordnik.com/v4/word.json/${word}/definitions?limit=1&includeRelated=false&useCanonical=false&includeTags=false&api_key=YOUR_API_KEY`);
+    return response.data[0].text;
   } catch (error) {
     return null;
   }
 }
 
-async function generateWordlist() {
+export async function generateWordList(count: number = WORD_COUNT): Promise<string[]> {
   const wordlist: string[] = [];
   const usedWords = new Set();
 
-  while (wordlist.length < WORD_COUNT) {
+  while (wordlist.length < count) {
     const word = await getRandomWord();
-    if (usedWords.has(word)) continue;
+    if (usedWords.has(word) || word.length < 3 || word.length > 15) continue;
     usedWords.add(word);
 
     const definition = await getWordDefinition(word);
@@ -31,13 +30,10 @@ async function generateWordlist() {
       wordlist.push(`${word.toUpperCase()}|${definition}`);
     }
 
-    if (wordlist.length % 100 === 0) {
+    if (wordlist.length % 10 === 0) {
       console.log(`Generated ${wordlist.length} words...`);
     }
   }
 
-  fs.writeFileSync('wordlist.txt', wordlist.join('\n'));
-  console.log('Wordlist generated successfully!');
+  return wordlist;
 }
-
-generateWordlist();

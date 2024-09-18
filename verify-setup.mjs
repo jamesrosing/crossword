@@ -1,8 +1,6 @@
-// verify-setup.mjs
-import { PrismaClient } from '@prisma/client/edge';
-import { withAccelerate } from '@prisma/extension-accelerate';
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient().$extends(withAccelerate());
+const prisma = new PrismaClient();
 
 async function verifySetup() {
   try {
@@ -12,11 +10,10 @@ async function verifySetup() {
           contains: "alice@prisma.io",
         },
       },
-      cacheStrategy: { ttl: 60 },
     });
-    console.log('Accelerate query successful. Users found:', users.length);
+    console.log('Query successful. Users found:', users.length);
   } catch (error) {
-    console.error('Error running Accelerate query:', error);
+    console.error('Error running query:', error);
   } finally {
     await prisma.$disconnect();
   }

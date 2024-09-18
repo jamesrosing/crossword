@@ -1,21 +1,13 @@
+import React from 'react';
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { GeistSans } from 'geist/font/sans';
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider"
-
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+import { Providers } from './providers';
+import ClientOnly from '@/components/ClientOnly';
 
 export const metadata: Metadata = {
-  title: "CrosswordMaster",
+  title: "Grid Wit",
   description: "Unlock your mind, one word at a time",
 };
 
@@ -25,16 +17,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
-      >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="flex flex-col min-h-screen">
-            <main id="main-content" className="flex-grow">
-              {children}
-            </main>
-          </div>
+    <html lang="en">
+      <body className={GeistSans.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Providers>
+            <ClientOnly>
+              <React.Suspense fallback={<div>Loading...</div>}>
+                {children}
+              </React.Suspense>
+            </ClientOnly>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

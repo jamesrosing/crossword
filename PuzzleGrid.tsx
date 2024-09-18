@@ -1,25 +1,39 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sun, Moon, Users } from "lucide-react"
 import Header from "@/components/Header"
 
+interface PuzzleWord {
+  word: string;
+  row: number;
+  col: number;
+  vertical: boolean;
+  clue: string;
+  number: number;
+}
+
+interface Puzzle {
+  grid: string[][];
+  words: PuzzleWord[];
+  width: number;
+  height: number;
+}
+
 interface PuzzleGridProps {
-  puzzle: Puzzle
-  onCellChange: (row: number, col: number, value: string) => void
+  puzzle: Puzzle;
+  onCellChange: (row: number, col: number, value: string) => void;
 }
 
 export default function PuzzleGrid({ puzzle, onCellChange }: PuzzleGridProps) {
-  const { theme, setTheme } = useTheme()
-  const [selectedClue, setSelectedClue] = useState<Clue | null>(null)
+  const { theme } = useTheme()
+  const [selectedClue, setSelectedClue] = useState<PuzzleWord | null>(null)
   const [selectedDirection, setSelectedDirection] = useState<'across' | 'down' | null>(null)
 
-  const handleClueClick = (clue: Clue, direction: 'across' | 'down') => {
+  const handleClueClick = (clue: PuzzleWord, direction: 'across' | 'down') => {
     setSelectedClue(clue)
     setSelectedDirection(direction)
   }
@@ -34,47 +48,40 @@ export default function PuzzleGrid({ puzzle, onCellChange }: PuzzleGridProps) {
               {selectedClue.number}{selectedDirection === 'across' ? 'A' : 'D'}: {selectedClue.clue}
             </div>
           )}
-          <svg
-            viewBox={`0 0 ${puzzle.width * 40} ${puzzle.height * 40}`}
-            className="w-full aspect-square"
-          >
-            {puzzle.cells.map((cell, index) => {
-              const row = Math.floor(index / puzzle.width)
-              const col = index % puzzle.width
-              return (
-                <g key={index}>
-                  <rect
-                    x={col * 40}
-                    y={row * 40}
-                    width="40"
-                    height="40"
-                    fill={cell.isBlack ? "black" : "white"}
-                    stroke="black"
-                  />
-                  {cell.number && (
-                    <text
-                      x={col * 40 + 2}
-                      y={row * 40 + 10}
-                      fontSize="10"
-                      textAnchor="start"
-                    >
-                      {cell.number}
-                    </text>
-                  )}
-                  {!cell.isBlack && (
-                    <foreignObject x={col * 40} y={row * 40} width="40" height="40">
+          <div className="grid grid-cols-15 gap-px bg-gray-200 p-px border border-gray-300">
+            {puzzle.grid.map((row, rowIndex) => (
+              <React.Fragment key={rowIndex}>
+                {row.map((cell, colIndex) => (
+                  <div
+                    key={`${rowIndex}-${colIndex}`}
+                    className={`relative w-full pb-[100%] ${
+                      cell === ' ' ? 'bg-black' : 'bg-white dark:bg-gray-800'
+                    } ${
+                      selectedClue &&
+                      ((selectedClue.vertical && colIndex === selectedClue.col && rowIndex >= selectedClue.row && rowIndex < selectedClue.row + selectedClue.word.length) ||
+                      (!selectedClue.vertical && rowIndex === selectedClue.row && colIndex >= selectedClue.col && colIndex < selectedClue.col + selectedClue.word.length))
+                        ? 'bg-blue-200 dark:bg-blue-800'
+                        : ''
+                    }`}
+                  >
+                    {puzzle.words.find(word => word.row === rowIndex && word.col === colIndex) && (
+                      <div className="absolute top-0 left-0 text-xs font-bold p-0.5 text-gray-800 dark:text-gray-200">
+                        {puzzle.words.find(word => word.row === rowIndex && word.col === colIndex)?.number}
+                      </div>
+                    )}
+                    {cell !== ' ' && (
                       <Input
-                        className="w-full h-full text-center p-0 border-none focus:ring-0 uppercase text-lg"
+                        type="text"
                         maxLength={1}
-                        value={cell.value || ''}
-                        onChange={(e) => onCellChange(row, col, e.target.value)}
+                        className="absolute inset-0 w-full h-full text-center font-bold text-lg uppercase border-none outline-none bg-transparent text-gray-800 dark:text-gray-200"
+                        onChange={(e) => onCellChange(rowIndex, colIndex, e.target.value)}
                       />
-                    </foreignObject>
-                  )}
-                </g>
-              )
-            })}
-          </svg>
+                    )}
+                  </div>
+                ))}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
         <div className="w-full sm:w-1/2 mt-4 sm:mt-0 sm:ml-4">
           <Tabs defaultValue="across" className="w-full">
@@ -84,30 +91,30 @@ export default function PuzzleGrid({ puzzle, onCellChange }: PuzzleGridProps) {
             </TabsList>
             <TabsContent value="across">
               <ScrollArea className="h-[calc(100vh-16rem)]">
-                {puzzle.clues.across.map((clue) => (
+                {puzzle.words.filter(word => !word.vertical).map((word) => (
                   <div
-                    key={clue.number}
+                    key={word.number}
                     className={`p-2 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded text-sm ${
-                      selectedClue === clue && selectedDirection === 'across' ? 'bg-primary text-primary-foreground' : ''
+                      selectedClue === word && selectedDirection === 'across' ? 'bg-primary text-primary-foreground' : ''
                     }`}
-                    onClick={() => handleClueClick(clue, 'across')}
+                    onClick={() => handleClueClick(word, 'across')}
                   >
-                    {clue.number}. {clue.clue}
+                    {word.number}. {word.clue}
                   </div>
                 ))}
               </ScrollArea>
             </TabsContent>
             <TabsContent value="down">
               <ScrollArea className="h-[calc(100vh-16rem)]">
-                {puzzle.clues.down.map((clue) => (
+                {puzzle.words.filter(word => word.vertical).map((word) => (
                   <div
-                    key={clue.number}
+                    key={word.number}
                     className={`p-2 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded text-sm ${
-                      selectedClue === clue && selectedDirection === 'down' ? 'bg-primary text-primary-foreground' : ''
+                      selectedClue === word && selectedDirection === 'down' ? 'bg-primary text-primary-foreground' : ''
                     }`}
-                    onClick={() => handleClueClick(clue, 'down')}
+                    onClick={() => handleClueClick(word, 'down')}
                   >
-                    {clue.number}. {clue.clue}
+                    {word.number}. {word.clue}
                   </div>
                 ))}
               </ScrollArea>

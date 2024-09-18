@@ -1,0 +1,15 @@
+.animated-slogan {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  padding: 1rem;
+}
+
+.animated-slogan span {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.animated-slogan span.visible {
+  opacity: 1;
+}

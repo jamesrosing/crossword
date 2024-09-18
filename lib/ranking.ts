@@ -31,10 +31,10 @@ interface PuzzleStats {
   totalAttempts: number;
 }
 
-export async function updateUserRanking(userId: number, puzzleId: number, completionTime: number) {
+export async function updateUserRanking(userId: string, puzzleId: string, completionTime: number) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { userProgress: true },
+    include: { progress: true },
   });
 
   if (!user) {
@@ -66,7 +66,7 @@ export async function updateUserRanking(userId: number, puzzleId: number, comple
   let rankingPoints = Math.round(basePoints * timeFactor * difficultyFactor);
 
   // Bonus points for first-time completion
-  const existingProgress = user.userProgress.find(progress => progress.puzzleId === puzzleId);
+  const existingProgress = user.progress.find(progress => progress.puzzleId === puzzleId);
   if (!existingProgress || !existingProgress.completed) {
     rankingPoints += Math.round(basePoints * 0.5); // 50% bonus for first completion
   }
@@ -78,7 +78,7 @@ export async function updateUserRanking(userId: number, puzzleId: number, comple
       rankingPoints: {
         increment: rankingPoints,
       },
-      userProgress: {
+      progress: {
         upsert: {
           where: {
             userId_puzzleId: {
@@ -88,10 +88,12 @@ export async function updateUserRanking(userId: number, puzzleId: number, comple
           },
           create: {
             puzzleId: puzzleId,
+            progress: JSON.stringify({}), // Add this line
             completed: true,
             completionTime: completionTime,
           },
           update: {
+            progress: JSON.stringify({}), // Add this line
             completed: true,
             completionTime: Math.min(completionTime, existingProgress?.completionTime || Infinity),
           },
@@ -99,7 +101,7 @@ export async function updateUserRanking(userId: number, puzzleId: number, comple
       },
     },
     include: {
-      userProgress: true,
+      progress: true,
     },
   });
 
@@ -115,7 +117,7 @@ export async function updateUserRanking(userId: number, puzzleId: number, comple
   return { ...updatedUser, newRankingPoints: rankingPoints, newRank };
 }
 
-async function getPuzzleStats(puzzleId: number): Promise<PuzzleStats> {
+async function getPuzzleStats(puzzleId: string): Promise<PuzzleStats> {
   const stats = await prisma.userProgress.aggregate({
     where: {
       puzzleId: puzzleId,
@@ -167,11 +169,11 @@ export async function getTopRankedUsers(limit: number = 10) {
   return topUsers;
 }
 
-export async function getUserStats(userId: number) {
+export async function getUserStats(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      userProgress: {
+      progress: {
         include: {
           puzzle: true,
         },
@@ -183,11 +185,11 @@ export async function getUserStats(userId: number) {
     throw new Error('User not found');
   }
 
-  const totalPuzzlesSolved = user.userProgress.filter(progress => progress.completed).length;
-  const averageCompletionTime = user.userProgress.reduce((sum, progress) => sum + (progress.completionTime || 0), 0) / totalPuzzlesSolved;
+  const totalPuzzlesSolved = user.progress.filter(progress => progress.completed).length;
+  const averageCompletionTime = user.progress.reduce((sum, progress) => sum + (progress.completionTime || 0), 0) / totalPuzzlesSolved;
 
-  const puzzlesByDifficulty = user.userProgress.reduce((acc, progress) => {
-    if (progress.completed) {
+  const puzzlesByDifficulty = user.progress.reduce((acc, progress) => {
+    if (progress.completed && progress.puzzle.difficulty) {
       acc[progress.puzzle.difficulty] = (acc[progress.puzzle.difficulty] || 0) + 1;
     }
     return acc;
@@ -196,10 +198,33 @@ export async function getUserStats(userId: number) {
   return {
     userId: user.id,
     name: user.name,
-    rank: user.rank,
+    rank: user.rank || 'Unranked',
     rankingPoints: user.rankingPoints,
     totalPuzzlesSolved,
     averageCompletionTime,
     puzzlesByDifficulty,
   };
+}
+
+// Add these functions if they don't exist
+export function calculateScore(difficulty: string, completionTime: number): number {
+  // Implement score calculation logic here
+  // This is a placeholder implementation
+  const baseScore = {
+    easy: 100,
+    medium: 200,
+    hard: 300,
+    expert: 400
+  }[difficulty] || 100;
+
+  return Math.round(baseScore * (3600 / completionTime)); // Adjust score based on completion time
+}
+
+export function calculateRank(totalScore: number): string {
+  // Implement rank calculation logic here
+  // This is a placeholder implementation
+  if (totalScore < 1000) return 'Novice';
+  if (totalScore < 5000) return 'Intermediate';
+  if (totalScore < 10000) return 'Advanced';
+  return 'Expert';
 }

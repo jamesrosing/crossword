@@ -21,10 +21,12 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MoonIcon, SunIcon, LaptopIcon, Menu, Search, ChevronDown, UserCircle, X } from 'lucide-react'
+import { MoonIcon, SunIcon, LaptopIcon, Menu, Search, ChevronDown, UserCircle, X, Users } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { signOut, useSession } from 'next-auth/react';
 
 export default function Header() {
+  const { data: session } = useSession();
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { theme, setTheme } = useTheme()
 
@@ -62,13 +64,26 @@ export default function Header() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 py-2 w-9 px-0"
+            className="relative"
           >
             <Search className="h-5 w-5" />
             <span className="sr-only">Search puzzles</span>
-          </button>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative group"
+          >
+            <Users className="h-5 w-5" />
+            <span className="sr-only">Invite Friends</span>
+            <span className="absolute top-10 scale-0 transition-all rounded bg-gray-800 p-2 text-xs text-white group-hover:scale-100">
+              Invite Friends
+            </span>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -168,6 +183,11 @@ export default function Header() {
             </Button>
           </div>
         </div>
+      )}
+      {session && (
+        <Button variant="outline" onClick={() => signOut()}>
+          Sign Out
+        </Button>
       )}
     </header>
   )

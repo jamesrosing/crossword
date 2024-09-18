@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -10,44 +8,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model User {
-  id             Int            @id @default(autoincrement())
-  email          String         @unique
-  name           String?
-  puzzles        Puzzle[]
-  userProgresses UserProgress[]
-  rankingPoints  Int            @default(0)
-  rank           String         @default("Novice")
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  name          String?
+  email         String?        @unique
+  emailVerified DateTime?
+  image         String?
+  UserProgress  UserProgress[]
+  Account       Account[]
+  Session       Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Puzzle {
-  id        Int      @id @default(autoincrement())
-  title     String
-  theme     String?
-  difficulty String
-  grid      Json
-  cluesAcross Json
-  cluesDown   Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  creator   User     @relation(fields: [creatorId], references: [id])
-  creatorId Int
-  userProgresses UserProgress[]
+  id           String         @id @default(cuid())
+  title        String
+  difficulty   String
+  grid         String
+  words        String
+  cellNumbers  String
+  cluesAcross  Json
+  cluesDown    Json
+  date         DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  UserProgress UserProgress[]
 }
 
 model UserProgress {
-  id             Int      @id @default(autoincrement())
-  user           User     @relation(fields: [userId], references: [id])
-  userId         Int
-  puzzle         Puzzle   @relation(fields: [puzzleId], references: [id])
-  puzzleId       Int
-  progress       Json
-  completed      Boolean  @default(false)
-  completionTime Int?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@unique([userId, puzzleId])
+  id        String  @id @default(cuid())
+  userId    String
+  puzzleId  String
+  progress  String
+  completed Boolean
+  user      User    @relation(fields: [userId], references: [id])
+  puzzle    Puzzle  @relation(fields: [puzzleId], references: [id])
 }
