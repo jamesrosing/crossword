@@ -1,4 +1,4 @@
-import { CrosswordGenerator } from '../lib/crosswordGenerator';
+import { CrosswordGenerator, testSymmetry } from '../lib/crosswordGenerator';
 import { promises as fs } from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -47,6 +47,11 @@ export async function generatePuzzle(size: number = 15) {
     }
 
     console.log(`Successfully generated puzzle with ${puzzle.words.length} words`);
+    
+    // Test symmetry
+    const isSymmetrical = testSymmetry(puzzle);
+    console.log(`Puzzle symmetry: ${isSymmetrical ? 'Pass' : 'Fail'}`);
+
     return puzzle;
   } catch (error) {
     console.error(`Error generating puzzle: ${error}`);

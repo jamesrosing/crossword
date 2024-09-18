@@ -8,17 +8,16 @@ export interface PuzzleWord {
 }
 
 export interface Puzzle {
-  id: string;
-  title: string;
-  difficulty: string;
+  grid: string[][];
+  words: PuzzleWord[];
   width: number;
   height: number;
-  grid: string[][];
-  words: string;
   cellNumbers: number[][];
-  cluesAcross: Record<string, string>;
-  cluesDown: Record<string, string>;
-  date: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  cluesAcross: Record<number, string>;
+  cluesDown: Record<number, string>;
+}
+
+export interface WordListItem {
+  word: string;
+  clue: string;
 }

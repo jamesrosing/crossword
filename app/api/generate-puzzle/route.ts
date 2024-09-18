@@ -1,38 +1,28 @@
 import { NextResponse } from 'next/server';
 import { CrosswordGenerator } from '@/lib/crosswordGenerator';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-interface Word {
-  word: string;
-  clue: string;
-}
-
-async function readWordList(): Promise<Word[]> {
-  const wordlistPath = path.join(process.cwd(), 'data', 'wordlist.txt');
-  const data = await fs.readFile(wordlistPath, 'utf-8');
-  
-  return data.split('\n').map((line: string) => {
-    const [word, clue] = line.split('|');
-    return { word: word.trim(), clue: clue.trim() };
-  });
-}
-
-async function generatePuzzle() {
-  const wordsWithClues = await readWordList();
-  const words = wordsWithClues.map(item => item.word);
-
-  const generator = new CrosswordGenerator(15); // Start with 15x15 grid
-  return generator.generatePuzzle(words);
-}
+import { readWordList } from '@/lib/wordListReader';
 
 export async function GET() {
   try {
-    const puzzle = await generatePuzzle();
+    const wordList = await readWordList();
+    const words = wordList.map(item => item.word);
+    const generator = new CrosswordGenerator(15); // Start with 15x15 grid
+    const puzzle = await generator.generatePuzzle(words);
 
-    if (!puzzle || !puzzle.words || puzzle.words.length === 0) {
+    if (!puzzle) {
       return NextResponse.json({ error: "Failed to generate a puzzle with words" }, { status: 500 });
     }
+
+    // Add clues to the puzzle
+    puzzle.words.forEach(word => {
+      const wordListItem = wordList.find(item => item.word === word.word);
+      word.clue = wordListItem ? wordListItem.clue : 'No clue available';
+      if (word.vertical) {
+        puzzle.cluesDown[word.number] = word.clue;
+      } else {
+        puzzle.cluesAcross[word.number] = word.clue;
+      }
+    });
 
     return NextResponse.json(puzzle);
   } catch (error) {

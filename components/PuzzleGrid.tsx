@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Puzzle, PuzzleWord } from "@/types/puzzle";
+import { Button } from './ui/button';
 
 interface PuzzleGridProps {
   puzzle: Puzzle;
@@ -9,9 +10,22 @@ interface PuzzleGridProps {
   onCellChange: (row: number, col: number, value: string) => void;
   selectedClue: PuzzleWord | null;
   onClueSelect: (clue: PuzzleWord) => void;
+  activeCell: { row: number; col: number } | null;
+  setActiveCell: React.Dispatch<React.SetStateAction<{ row: number; col: number } | null>>;
+  incorrectCells: { row: number; col: number }[];
 }
 
-export default function PuzzleGrid({ puzzle, userGrid, onCellChange, selectedClue, onClueSelect }: PuzzleGridProps) {
+export default function PuzzleGrid({ 
+  puzzle, 
+  userGrid, 
+  onCellChange, 
+  selectedClue, 
+  onClueSelect,
+  activeCell,
+  setActiveCell,
+  incorrectCells
+}: PuzzleGridProps) {
+  const [hintsUsed, setHintsUsed] = useState(0);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +56,20 @@ export default function PuzzleGrid({ puzzle, userGrid, onCellChange, selectedClu
       moveDown(row, col);
     } else if (key === 'ArrowUp') {
       moveUp(row, col);
+    }
+  };
+
+  const handleHint = () => {
+    if (!activeCell || !puzzle) return;
+
+    const { row, col } = activeCell;
+    const correctLetter = puzzle.grid[row][col];
+
+    if (userGrid[row][col] !== correctLetter) {
+      const newGrid = [...userGrid];
+      newGrid[row][col] = correctLetter;
+      onCellChange(row, col, correctLetter);
+      setHintsUsed(hintsUsed + 1);
     }
   };
 
@@ -80,6 +108,10 @@ export default function PuzzleGrid({ puzzle, userGrid, onCellChange, selectedClu
     }
   };
 
+  const isIncorrect = (row: number, col: number) => {
+    return incorrectCells.some(cell => cell.row === row && cell.col === col);
+  };
+
   return (
     <div ref={gridRef} className="grid gap-[1px] bg-gray-200 dark:bg-gray-700" style={{ gridTemplateColumns: `repeat(${puzzle.width}, 1fr)` }}>
       {puzzle.grid.map((row, rowIndex) => (
@@ -94,7 +126,12 @@ export default function PuzzleGrid({ puzzle, userGrid, onCellChange, selectedClu
               (!selectedClue.vertical && rowIndex === selectedClue.row && colIndex >= selectedClue.col && colIndex < selectedClue.col + selectedClue.word.length))
                 ? 'bg-blue-100 dark:bg-blue-900'
                 : ''
+            } ${
+              isIncorrect(rowIndex, colIndex) ? 'bg-red-100 dark:bg-red-900' : ''
+            } ${
+              activeCell?.row === rowIndex && activeCell?.col === colIndex ? 'bg-blue-200' : ''
             }`}
+            onClick={() => setActiveCell({ row: rowIndex, col: colIndex })}
           >
             {puzzle.cellNumbers[rowIndex][colIndex] > 0 && (
               <div className="absolute top-0 left-0 text-[8px] font-bold p-[1px] text-gray-800 dark:text-gray-200">
@@ -116,6 +153,7 @@ export default function PuzzleGrid({ puzzle, userGrid, onCellChange, selectedClu
           </div>
         ))
       ))}
+      <Button onClick={handleHint} disabled={hintsUsed >= 3}>Get Hint ({3 - hintsUsed} left)</Button>
     </div>
   );
 }

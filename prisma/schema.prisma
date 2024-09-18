@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Account {
@@ -36,14 +36,17 @@ model Session {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  name          String?
-  email         String?        @unique
-  emailVerified DateTime?
-  image         String?
-  UserProgress  UserProgress[]
-  Account       Account[]
-  Session       Session[]
+  id             String         @id @default(uuid())
+  name           String?
+  email          String?        @unique
+  emailVerified  DateTime?
+  image          String?
+  accounts       Account[]
+  sessions       Session[]
+  progress       UserProgress[]
+  rankingPoints  Int            @default(0)
+  rank           String?
+  createdPuzzles Puzzle[] // Add this line
 }
 
 model VerificationToken {
@@ -55,26 +58,31 @@ model VerificationToken {
 }
 
 model Puzzle {
-  id           String         @id @default(cuid())
-  title        String
-  difficulty   String
-  grid         String
-  words        String
-  cellNumbers  String
-  cluesAcross  Json
-  cluesDown    Json
-  date         DateTime       @default(now())
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  UserProgress UserProgress[]
+  id          String         @id @default(uuid())
+  title       String?
+  difficulty  String?
+  grid        String // JSON string representation of the grid
+  words       String // JSON string representation of the words
+  cellNumbers String // JSON string representation of cell numbers
+  cluesAcross String // JSON string representation of across clues
+  cluesDown   String // JSON string representation of down clues
+  date        DateTime       @default(now())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  creatorId   String?
+  creator     User?          @relation(fields: [creatorId], references: [id])
+  progress    UserProgress[]
 }
 
 model UserProgress {
-  id        String  @id @default(cuid())
-  userId    String
-  puzzleId  String
-  progress  String
-  completed Boolean
-  user      User    @relation(fields: [userId], references: [id])
-  puzzle    Puzzle  @relation(fields: [puzzleId], references: [id])
+  id             String  @id @default(uuid())
+  userId         String
+  puzzleId       String
+  progress       String // JSON string representation of progress
+  completed      Boolean @default(false)
+  completionTime Int?
+  user           User    @relation(fields: [userId], references: [id])
+  puzzle         Puzzle  @relation(fields: [puzzleId], references: [id])
+
+  @@unique([userId, puzzleId])
 }

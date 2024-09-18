@@ -1,15 +1,7 @@
 import React from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-
-interface PuzzleWord {
-  word: string;
-  row: number;
-  col: number;
-  vertical: boolean;
-  clue: string;
-  number: number;
-}
+import { PuzzleWord } from '@/types/puzzle';
 
 interface ClueListProps {
   type: 'across' | 'down';

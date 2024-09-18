@@ -16,6 +16,8 @@ async function main() {
       title: 'First Crossword',
       difficulty: 'Easy',
       grid: JSON.stringify([/* Your puzzle grid here */]),
+      words: JSON.stringify([/* Your words here */]),
+      cellNumbers: JSON.stringify([/* Your cell numbers here */]),
       cluesAcross: JSON.stringify({/* Your across clues here */}),
       cluesDown: JSON.stringify({/* Your down clues here */}),
       creatorId: newUser.id,

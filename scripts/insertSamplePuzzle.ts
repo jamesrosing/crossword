@@ -10,8 +10,8 @@ async function insertSamplePuzzle() {
       grid: JSON.stringify([['A', 'B', 'C'], ['D', 'E', 'F'], ['G', 'H', 'I']]),
       words: JSON.stringify(['ABC', 'DEF', 'GHI']),
       cellNumbers: JSON.stringify([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
-      cluesAcross: { '1': 'First row', '4': 'Second row', '7': 'Third row' },
-      cluesDown: { '1': 'First column', '2': 'Second column', '3': 'Third column' },
+      cluesAcross: JSON.stringify({ '1': 'First row', '4': 'Second row', '7': 'Third row' }),
+      cluesDown: JSON.stringify({ '1': 'First column', '2': 'Second column', '3': 'Third column' }),
     },
   });
 

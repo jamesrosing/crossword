@@ -4,68 +4,49 @@ import { generateClue } from './clueGenerator';
 export class CrosswordGenerator {
   private grid: string[][];
   private size: number;
-  private lastPlacedRow: number;
-  private lastPlacedCol: number;
-  private lastPlacedVertical: boolean;
+  private words: string[];
 
   constructor(size: number) {
     this.size = size;
     this.grid = Array(size).fill(null).map(() => Array(size).fill('#'));
-    this.lastPlacedRow = -1;
-    this.lastPlacedCol = -1;
-    this.lastPlacedVertical = false;
+    this.words = [];
   }
 
   async generatePuzzle(words: string[]): Promise<Puzzle | null> {
-    // Sort words by length in descending order
-    const sortedWords = words.sort((a, b) => b.length - a.length);
-    
-    const maxAttempts = 3;
+    this.words = words.sort((a, b) => b.length - a.length);
     const placedWords: PuzzleWord[] = [];
-    const skippedWords: string[] = [];
 
-    for (const word of sortedWords) {
-      let placed = false;
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (await this.placeWord(word)) {
-          placed = true;
-          placedWords.push({
-            word,
-            row: this.lastPlacedRow,
-            col: this.lastPlacedCol,
-            vertical: this.lastPlacedVertical,
-            clue: await generateClue(word),
-            number: placedWords.length + 1,
-          });
-          break;
-        }
-      }
-      if (!placed) {
-        skippedWords.push(word);
-      }
-    }
-
-    // Try to place skipped words
-    for (const word of skippedWords) {
-      if (await this.placeWord(word)) {
+    for (const word of this.words) {
+      const placement = this.findBestPlacement(word);
+      if (placement) {
+        this.placeWord(word, placement.row, placement.col, placement.vertical);
         placedWords.push({
           word,
-          row: this.lastPlacedRow,
-          col: this.lastPlacedCol,
-          vertical: this.lastPlacedVertical,
+          row: placement.row,
+          col: placement.col,
+          vertical: placement.vertical,
           clue: await generateClue(word),
-          number: placedWords.length + 1,
+          number: placedWords.length + 1
         });
       }
     }
 
-    console.log(`Placed ${placedWords.length} words out of ${words.length}`);
-
-    if (placedWords.length < words.length * 0.7) {  // If less than 70% of words are placed
+    if (placedWords.length < this.words.length * 0.7) {
       console.log("Not enough words placed. Increasing grid size and retrying.");
-      this.size += 2;  // Increase grid size
-      return this.generatePuzzle(words);  // Retry with increased grid size
+      this.size += 2;
+      return this.generatePuzzle(words);
     }
+
+    const cluesAcross: Record<number, string> = {};
+    const cluesDown: Record<number, string> = {};
+
+    placedWords.forEach(word => {
+      if (word.vertical) {
+        cluesDown[word.number] = word.clue;
+      } else {
+        cluesAcross[word.number] = word.clue;
+      }
+    });
 
     return {
       grid: this.grid,
@@ -73,100 +54,155 @@ export class CrosswordGenerator {
       width: this.size,
       height: this.size,
       cellNumbers: this.generateCellNumbers(),
+      cluesAcross,
+      cluesDown
     };
   }
 
-  private async placeWord(word: string): Promise<boolean> {
-    const positions = this.getPossiblePositions(word);
-    if (positions.length === 0) return false;
-
-    const [row, col, vertical] = positions[Math.floor(Math.random() * positions.length)];
-
-    if (vertical) {
-      for (let i = 0; i < word.length; i++) {
-        this.grid[row + i][col] = word[i];
-      }
-    } else {
-      for (let i = 0; i < word.length; i++) {
-        this.grid[row][col + i] = word[i];
-      }
-    }
-
-    this.lastPlacedRow = row;
-    this.lastPlacedCol = col;
-    this.lastPlacedVertical = vertical;
-    return true;
-  }
-
-  private getPossiblePositions(word: string): [number, number, boolean][] {
-    const positions: [number, number, boolean][] = [];
+  private findBestPlacement(word: string): { row: number; col: number; vertical: boolean } | null {
+    let bestScore = -1;
+    let bestPlacement = null;
 
     for (let row = 0; row < this.size; row++) {
       for (let col = 0; col < this.size; col++) {
-        if (this.canPlaceWordHorizontally(word, row, col)) {
-          positions.push([row, col, false]);
+        const horizontalScore = this.scorePlacement(word, row, col, false);
+        if (horizontalScore > bestScore) {
+          bestScore = horizontalScore;
+          bestPlacement = { row, col, vertical: false };
         }
-        if (this.canPlaceWordVertically(word, row, col)) {
-          positions.push([row, col, true]);
+
+        const verticalScore = this.scorePlacement(word, row, col, true);
+        if (verticalScore > bestScore) {
+          bestScore = verticalScore;
+          bestPlacement = { row, col, vertical: true };
         }
       }
     }
 
-    return positions;
+    return bestPlacement;
   }
 
-  private canPlaceWordHorizontally(word: string, row: number, col: number): boolean {
-    if (col + word.length > this.size) return false;
-    if (col > 0 && this.grid[row][col - 1] !== '#') return false;
-    if (col + word.length < this.size && this.grid[row][col + word.length] !== '#') return false;
-
-    let intersections = 0;
-    for (let i = 0; i < word.length; i++) {
-      if (this.grid[row][col + i] !== '#' && this.grid[row][col + i] !== word[i]) return false;
-      if (this.grid[row][col + i] === word[i]) intersections++;
+  private scorePlacement(word: string, row: number, col: number, vertical: boolean): number {
+    if (!this.canPlaceWord(word, row, col, vertical)) {
+      return -1;
     }
 
-    return intersections > 0 || col === 0 || col + word.length === this.size;
+    let score = 0;
+    let intersections = 0;
+
+    for (let i = 0; i < word.length; i++) {
+      const currentRow = vertical ? row + i : row;
+      const currentCol = vertical ? col : col + i;
+
+      if (this.grid[currentRow][currentCol] === word[i]) {
+        score += 2;
+        intersections++;
+      } else if (this.grid[currentRow][currentCol] === '#') {
+        score += 1;
+      }
+    }
+
+    return intersections > 0 ? score : -1;
   }
 
-  private canPlaceWordVertically(word: string, row: number, col: number): boolean {
-    if (row + word.length > this.size) return false;
-    if (row > 0 && this.grid[row - 1][col] !== '#') return false;
-    if (row + word.length < this.size && this.grid[row + word.length][col] !== '#') return false;
+  private canPlaceWord(word: string, row: number, col: number, vertical: boolean): boolean {
+    if (vertical && row + word.length > this.size) return false;
+    if (!vertical && col + word.length > this.size) return false;
 
-    let intersections = 0;
     for (let i = 0; i < word.length; i++) {
-      if (this.grid[row + i][col] !== '#' && this.grid[row + i][col] !== word[i]) return false;
-      if (this.grid[row + i][col] === word[i]) intersections++;
+      const currentRow = vertical ? row + i : row;
+      const currentCol = vertical ? col : col + i;
+
+      if (currentRow < 0 || currentRow >= this.size || currentCol < 0 || currentCol >= this.size) {
+        return false;
+      }
+
+      if (this.grid[currentRow][currentCol] !== '#' && this.grid[currentRow][currentCol] !== word[i]) {
+        return false;
+      }
+
+      if (i > 0) {
+        const adjacentRow = vertical ? currentRow - 1 : currentRow;
+        const adjacentCol = vertical ? currentCol : currentCol - 1;
+        if (this.isValidCell(adjacentRow, adjacentCol) && this.grid[adjacentRow][adjacentCol] !== '#') {
+          return false;
+        }
+      }
+
+      if (i < word.length - 1) {
+        const adjacentRow = vertical ? currentRow + 1 : currentRow;
+        const adjacentCol = vertical ? currentCol : currentCol + 1;
+        if (this.isValidCell(adjacentRow, adjacentCol) && this.grid[adjacentRow][adjacentCol] !== '#') {
+          return false;
+        }
+      }
     }
 
-    return intersections > 0 || row === 0 || row + word.length === this.size;
+    return true;
+  }
+
+  private isValidCell(row: number, col: number): boolean {
+    return row >= 0 && row < this.size && col >= 0 && col < this.size;
+  }
+
+  private placeWord(word: string, row: number, col: number, vertical: boolean): void {
+    for (let i = 0; i < word.length; i++) {
+      if (vertical) {
+        this.grid[row + i][col] = word[i];
+      } else {
+        this.grid[row][col + i] = word[i];
+      }
+    }
   }
 
   private generateCellNumbers(): number[][] {
     const cellNumbers = Array(this.size).fill(null).map(() => Array(this.size).fill(0));
-    let cellNumber = 1;
+    let number = 1;
+
     for (let row = 0; row < this.size; row++) {
       for (let col = 0; col < this.size; col++) {
-        if (this.grid[row][col] !== '#' && 
-            (this.isStartOfHorizontalWord(row, col) || this.isStartOfVerticalWord(row, col))) {
-          cellNumbers[row][col] = cellNumber;
-          cellNumber++;
+        if (this.grid[row][col] !== '#' &&
+            (this.isStartOfWord(row, col, true) || this.isStartOfWord(row, col, false))) {
+          cellNumbers[row][col] = number++;
         }
       }
     }
+
     return cellNumbers;
   }
 
-  private isStartOfHorizontalWord(row: number, col: number): boolean {
-    return (col === 0 || this.grid[row][col - 1] === '#') && 
-           (col < this.size - 1 && this.grid[row][col + 1] !== '#');
-  }
-
-  private isStartOfVerticalWord(row: number, col: number): boolean {
-    return (row === 0 || this.grid[row - 1][col] === '#') && 
-           (row < this.size - 1 && this.grid[row + 1][col] !== '#');
+  private isStartOfWord(row: number, col: number, vertical: boolean): boolean {
+    if (vertical) {
+      return row === 0 || this.grid[row - 1][col] === '#';
+    } else {
+      return col === 0 || this.grid[row][col - 1] === '#';
+    }
   }
 }
+
+export function testSymmetry(puzzle: Puzzle): boolean {
+  const { grid, width, height } = puzzle;
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      const mirrorRow = height - 1 - row;
+      const mirrorCol = width - 1 - col;
+      if ((grid[row][col] === '#') !== (grid[mirrorRow][mirrorCol] === '#')) {
+        console.error(`Asymmetry found at (${row}, ${col}) and (${mirrorRow}, ${mirrorCol})`);
+        return false;
+      }
+    }
+  }
+  console.log('Puzzle is symmetrical');
+  return true;
+}
+
+
+
+
+
+
+
+
+
 
 

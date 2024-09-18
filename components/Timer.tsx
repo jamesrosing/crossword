@@ -3,33 +3,29 @@
 import React, { useState, useEffect } from 'react'
 
 interface TimerProps {
-  className?: string
+  isRunning: boolean;
 }
 
-export function Timer({ className }: TimerProps) {
-  const [time, setTime] = useState(0)
+export default function Timer({ isRunning }: TimerProps) {
+  const [time, setTime] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTime((prevTime) => prevTime + 1)
-    }, 1000)
+    let interval: NodeJS.Timeout;
 
-    return () => clearInterval(timer)
-  }, [])
+    if (isRunning) {
+      interval = setInterval(() => {
+        setTime((prevTime) => prevTime + 1);
+      }, 1000);
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
   const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const remainingSeconds = seconds % 60
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
-    return [hours, minutes, remainingSeconds]
-      .map(v => v.toString().padStart(2, '0'))
-      .join(':')
-  }
-
-  return (
-    <div className={`font-mono text-lg ${className}`}>
-      {formatTime(time)}
-    </div>
-  )
+  return <div className="text-lg font-semibold">Time: {formatTime(time)}</div>;
 }

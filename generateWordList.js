@@ -41,6 +41,7 @@ var puppeteer_1 = require("puppeteer");
 var fs = require("fs");
 var path = require("path");
 var openai_1 = require("openai");
+import fallbackWordList from '../data/fallbackWordList.json';
 // Check if the API key is set
 if (!process.env.OPENAI_API_KEY) {
     console.error('Error: OPENAI_API_KEY environment variable is not set.');
@@ -56,10 +57,10 @@ var wordListPath = path.join(process.cwd(), 'crossword-master', 'data', 'nyt_wor
 var NYT_USERNAME = 'mollierosing@gmail.com';
 var NYT_PASSWORD = 'Willow2020*';
 // Function to log in to New York Times Crossword and scrape data
-function scrapeNYTCrossword() {
-    return __awaiter(this, void 0, void 0, function () {
+async function scrapeNYTCrossword() {
+    try {
         var browser, page, crosswordUrl, crosswordData;
-        return __generator(this, function (_a) {
+        return __awaiter(this, void 0, void 0, function () {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, puppeteer_1.default.launch({ headless: true })];
                 case 1:
@@ -119,7 +120,10 @@ function scrapeNYTCrossword() {
                     return [2 /*return*/, crosswordData];
             }
         });
-    });
+    } catch (error) {
+        console.error('Error scraping NYT Crossword:', error);
+        return fallbackWordList;
+    }
 }
 // Function to categorize words and clues into difficulty levels
 function categorizeByDifficulty(wordCluePairs) {

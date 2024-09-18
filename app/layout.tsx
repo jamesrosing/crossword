@@ -1,39 +1,30 @@
 import React from 'react';
-import type { Metadata } from "next";
-import { GeistSans } from 'geist/font/sans';
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider"
+import { Metadata } from 'next';
 import { Providers } from './providers';
 import ClientOnly from '@/components/ClientOnly';
+import { Toaster } from "@/components/ui/toaster";
+import './globals.css';
 
 export const metadata: Metadata = {
   title: "Grid Wit",
-  description: "Unlock your mind, one word at a time",
+  description: "A crossword puzzle game",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body className={GeistSans.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Providers>
-            <ClientOnly>
-              <React.Suspense fallback={<div>Loading...</div>}>
-                {children}
-              </React.Suspense>
-            </ClientOnly>
-          </Providers>
-        </ThemeProvider>
+      <body>
+        <Providers>
+          <ClientOnly>
+            {children}
+            <Toaster />
+          </ClientOnly>
+        </Providers>
       </body>
     </html>
-  );
+  )
 }
